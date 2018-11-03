@@ -8,3 +8,14 @@ Requires an install of [Jet](http://github.com/jeffamstutz/fluid-engine-dev) lib
 (required CMake exports changes not yet upstreamed).
 
 NOTE: Build Jet with ```JET_TASKING_SYSTEM=Serial```. TBB currently causes a runtime crash.
+
+## Run Instructions
+
+Run with:
+
+```bash
+./ospStudio --plugin jet
+```
+
+...then find the simulation control panel in the ```view``` menu.
+
