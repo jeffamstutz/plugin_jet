@@ -29,9 +29,7 @@ namespace ospray {
 
     void PanelJet::buildUI()
     {
-      ImGui::OpenPopup("Jet Panel");
-
-      if (ImGui::BeginPopupModal(
+      if (ImGui::Begin(
               "Jet Panel", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("Simulation Parameters:");
 
@@ -96,10 +94,9 @@ namespace ospray {
 
         if (ImGui::Button("Close")) {
           setShown(false);
-          ImGui::CloseCurrentPopup();
         }
 
-        ImGui::EndPopup();
+        ImGui::End();
       }
     }
 
