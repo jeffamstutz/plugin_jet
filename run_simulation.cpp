@@ -84,7 +84,8 @@ namespace ospray {
 
     SimResults run_simulation(size_t resolutionX,
                               int numberOfFrames,
-                              double fps)
+                              double fps,
+                              int &current_frame)
     {
       jet::Logging::mute();
 
@@ -131,8 +132,8 @@ namespace ospray {
       // Run simulation
       for (jet::Frame frame(0, 1.0 / fps); frame.index < numberOfFrames;
            ++frame) {
-        printf("Calculating time step %i\n", frame.index);
         solver->update(frame);
+        current_frame = frame.index;
       }
 
       auto density = solver->smokeDensity();

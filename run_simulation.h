@@ -26,9 +26,10 @@ namespace ospray {
     using SimResults = std::tuple<ospcommon::containers::AlignedVector<float>,
                                   ospcommon::vec3i>;
 
-    SimResults run_simulation(size_t resolutionX = 50,
-                              int numberOfFrames = 10,
-                              double fps         = 60.0);
+    SimResults run_simulation(size_t resolutionX,
+                              int numberOfFrames,
+                              double fps,
+                              int &current_frame);
 
   }  // namespace jet_plugin
 }  // namespace ospray

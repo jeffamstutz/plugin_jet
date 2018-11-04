@@ -44,46 +44,54 @@ namespace ospray {
         static float fps = 60.f;
         ImGui::DragFloat("sim FPS", &fps, .01f, 1.f, 120.f);
 
+        static int current_frame = -1;
+
         ImGui::NewLine();
         ImGui::Separator();
         ImGui::NewLine();
 
-        if (ImGui::Button("Run Simulation")) {
-          job_scheduler::schedule_job([=]() {
-            job_scheduler::Nodes retval;
-            auto [data, dims] = run_simulation(resolution, numFrames, fps);
+        if (current_frame >= 0) {
+          ImGui::Text("running sim...");
+          ImGui::Text("current frame: %i", current_frame);
+        } else {
+          if (ImGui::Button("Run Simulation")) {
+            job_scheduler::schedule_job([&]() {
+              job_scheduler::Nodes retval;
+              current_frame = 0;
+              auto [data, dims] =
+                  run_simulation(resolution, numFrames, fps, current_frame);
 
-            // create sg nodes
+              // create sg nodes
 
-            auto volume_node =
-                sg::createNode("basic_volume", "StructuredVolume");
+              auto volume_node =
+                  sg::createNode("basic_volume", "StructuredVolume");
 
-            auto voxel_data = std::make_shared<sg::DataVector1f>();
-            voxel_data->v   = std::move(data);
+              auto voxel_data = std::make_shared<sg::DataVector1f>();
+              voxel_data->v   = std::move(data);
 
-            voxel_data->setName("voxelData");
+              voxel_data->setName("voxelData");
 
-            volume_node->add(voxel_data);
+              volume_node->add(voxel_data);
 
-            // volume attributes
+              // volume attributes
 
-            volume_node->child("voxelType")  = std::string("float");
-            volume_node->child("dimensions") = vec3i(dims);
+              volume_node->child("voxelType")  = std::string("float");
+              volume_node->child("dimensions") = vec3i(dims);
 
-            if (volume_node->hasChildRecursive("gradientShadingEnabled"))
-              volume_node->childRecursive("gradientShadingEnabled") = false;
-            if (volume_node->hasChildRecursive("samplingRate"))
-              volume_node->childRecursive("samplingRate") = 0.125f;
-            if (volume_node->hasChildRecursive("adaptiveMaxSamplingRate"))
-              volume_node->childRecursive("adaptiveMaxSamplingRate") = 1.0f;
+              if (volume_node->hasChildRecursive("gradientShadingEnabled"))
+                volume_node->childRecursive("gradientShadingEnabled") = false;
+              if (volume_node->hasChildRecursive("samplingRate"))
+                volume_node->childRecursive("samplingRate") = 0.125f;
+              if (volume_node->hasChildRecursive("adaptiveMaxSamplingRate"))
+                volume_node->childRecursive("adaptiveMaxSamplingRate") = 1.0f;
 
-            retval.push_back(volume_node);
+              retval.push_back(volume_node);
 
-            return retval;
-          });
+              current_frame = -1;
 
-          setShown(false);
-          ImGui::CloseCurrentPopup();
+              return retval;
+            });
+          }
         }
 
         if (ImGui::Button("Close")) {
