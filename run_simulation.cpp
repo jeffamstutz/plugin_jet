@@ -86,6 +86,8 @@ namespace ospray {
                               int numberOfFrames,
                               double fps)
     {
+      jet::Logging::mute();
+
       vec3i dims(resolutionX, 2 * resolutionX, resolutionX);
 
       // Build solver
@@ -125,9 +127,6 @@ namespace ospray {
           jet::RigidBodyCollider3::builder().withSurface(sphere).makeShared();
 
       solver->setCollider(collider);
-
-      // Print simulation info
-      // TODO: improve this
 
       // Run simulation
       for (jet::Frame frame(0, 1.0 / fps); frame.index < numberOfFrames;
