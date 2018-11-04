@@ -7,8 +7,6 @@ Clone this repository into your OSPRay Studio source tree under: ```ospray_studi
 Requires an install of [Jet](http://github.com/jeffamstutz/fluid-engine-dev) library
 (required CMake exports changes not yet upstreamed).
 
-NOTE: Build Jet with ```JET_TASKING_SYSTEM=Serial```. TBB currently causes a runtime crash.
-
 ## Run Instructions
 
 Run with:
