@@ -21,6 +21,8 @@
 // jet_plugin
 #include "PanelJet.h"
 #include "run_simulation.h"
+// ospcommon
+#include "ospcommon/utility/OnScopeExit.h"
 
 namespace ospray {
   namespace jet_plugin {
@@ -42,11 +44,14 @@ namespace ospray {
         static float fps = 60.f;
         ImGui::DragFloat("sim FPS", &fps, .01f, 1.f, 120.f);
 
-        static int current_frame     = -1;
-        static bool cancelSimulation = false;
+        static bool addIfCanceled    = true;
+        ImGui::Checkbox("add volume if canceled", &addIfCanceled);
 
         ImGui::NewLine();
         ImGui::Separator();
+
+        static int current_frame     = -1;
+        static bool cancelSimulation = false;
 
         if (current_frame >= 0) {
           ImGui::Text("running sim...");
@@ -63,6 +68,11 @@ namespace ospray {
               current_frame     = 0;
               auto [data, dims] = run_simulation(
                   resolution, numFrames, fps, current_frame, cancelSimulation);
+
+              utility::OnScopeExit([&]() { current_frame = -1; });
+
+              if (cancelSimulation && !addIfCanceled)
+                return retval;
 
               // create sg nodes
 
@@ -89,8 +99,6 @@ namespace ospray {
                 volume_node->childRecursive("adaptiveMaxSamplingRate") = 1.0f;
 
               retval.push_back(volume_node);
-
-              current_frame = -1;
 
               return retval;
             });
