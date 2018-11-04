@@ -42,22 +42,27 @@ namespace ospray {
         static float fps = 60.f;
         ImGui::DragFloat("sim FPS", &fps, .01f, 1.f, 120.f);
 
-        static int current_frame = -1;
+        static int current_frame     = -1;
+        static bool cancelSimulation = false;
 
         ImGui::NewLine();
         ImGui::Separator();
-        ImGui::NewLine();
 
         if (current_frame >= 0) {
           ImGui::Text("running sim...");
           ImGui::Text("current frame: %i", current_frame);
+          if (ImGui::Button("Cancel Simulation"))
+            cancelSimulation = true;
         } else {
-          if (ImGui::Button("Run Simulation")) {
+          ImGui::NewLine();
+          ImGui::NewLine();
+          if (ImGui::Button("Launch New Simulation")) {
+            cancelSimulation = false;
             job_scheduler::schedule_job([&]() {
               job_scheduler::Nodes retval;
-              current_frame = 0;
-              auto [data, dims] =
-                  run_simulation(resolution, numFrames, fps, current_frame);
+              current_frame     = 0;
+              auto [data, dims] = run_simulation(
+                  resolution, numFrames, fps, current_frame, cancelSimulation);
 
               // create sg nodes
 

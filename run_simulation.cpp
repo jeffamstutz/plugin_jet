@@ -85,7 +85,8 @@ namespace ospray {
     SimResults run_simulation(size_t resolutionX,
                               int numberOfFrames,
                               double fps,
-                              int &current_frame)
+                              int &current_frame,
+                              bool &cancel_simulation)
     {
       jet::Logging::mute();
 
@@ -134,6 +135,8 @@ namespace ospray {
            ++frame) {
         solver->update(frame);
         current_frame = frame.index;
+        if (cancel_simulation)
+          break;
       }
 
       auto density = solver->smokeDensity();
