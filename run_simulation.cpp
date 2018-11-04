@@ -47,7 +47,7 @@ namespace ospray {
       multidim_index_sequence<3> index(vec3i(size.x, size.y, size.z));
       containers::AlignedVector<float> data(index.total_indices());
 
-      tasking::serial_for(index.total_indices(), [&](size_t v) {
+      tasking::parallel_for(index.total_indices(), [&](size_t v) {
         auto current_index = index.reshape(v);
 
         const auto &i = current_index.x;
