@@ -16,6 +16,7 @@
 
 // imgui
 #include "imgui.h"
+#include "../../app/widgets/sg_ui/ospray_sg_ui.h"
 // jobs
 #include "../../app/jobs/JobScheduler.h"
 // jet_plugin
@@ -31,8 +32,8 @@ namespace ospray {
 
     void PanelJet::buildUI()
     {
-      if (ImGui::Begin(
-              "Jet Panel", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+      auto flags = g_defaultWindowFlags | ImGuiWindowFlags_AlwaysAutoResize;
+      if (ImGui::Begin("Jet Panel", nullptr, flags)) {
         ui_SimulationParameters();
 
         ImGui::NewLine();
