@@ -52,7 +52,7 @@ namespace ospray {
 
         ImGui::Text("Initial Volume Rendering Parameters:");
 
-        static float samplingRate = 0.125f;
+        static float samplingRate = 0.25f;
         ImGui::DragFloat("sampling rate", &samplingRate, .01f, 0.01, 10.f);
 
         static bool gradientShading = false;
