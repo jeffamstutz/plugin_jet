@@ -26,6 +26,30 @@ namespace ospray {
       PanelJet();
 
       void buildUI() override;
+
+     private:
+      // Helper functions //
+
+      void ui_SimulationParameters();
+      void ui_RenderingParameters();
+      void ui_SimulationStart();
+      void ui_SimulationStatus();
+
+      // Data //
+
+      // simulation data
+      int resolution     = 50;
+      int numFrames      = 100;
+      float fps          = 60.f;
+      bool addIfCanceled = true;
+
+      // rendering data
+      float samplingRate   = 0.25f;
+      bool gradientShading = false;
+
+      // misc. UI data
+      int current_frame     = -1;
+      bool cancelSimulation = false;
     };
 
   }  // namespace jet_plugin
