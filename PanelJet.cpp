@@ -44,10 +44,22 @@ namespace ospray {
         static float fps = 60.f;
         ImGui::DragFloat("sim FPS", &fps, .01f, 1.f, 120.f);
 
-        static bool addIfCanceled    = true;
+        static bool addIfCanceled = true;
         ImGui::Checkbox("add volume if canceled", &addIfCanceled);
 
         ImGui::NewLine();
+        ImGui::Separator();
+
+        ImGui::Text("Initial Volume Rendering Parameters:");
+
+        static float samplingRate = 0.125f;
+        ImGui::DragFloat("sampling rate", &samplingRate, .01f, 0.01, 10.f);
+
+        static bool gradientShading = false;
+        ImGui::Checkbox("gradient shading", &gradientShading);
+
+        ImGui::NewLine();
+        ImGui::Separator();
         ImGui::Separator();
 
         static int current_frame     = -1;
@@ -65,7 +77,8 @@ namespace ospray {
             cancelSimulation = false;
             job_scheduler::schedule_job([&]() {
               job_scheduler::Nodes retval;
-              current_frame     = 0;
+              current_frame = 0;
+
               auto [data, dims] = run_simulation(
                   resolution, numFrames, fps, current_frame, cancelSimulation);
 
@@ -91,12 +104,18 @@ namespace ospray {
               volume_node->child("voxelType")  = std::string("float");
               volume_node->child("dimensions") = vec3i(dims);
 
-              if (volume_node->hasChildRecursive("gradientShadingEnabled"))
-                volume_node->childRecursive("gradientShadingEnabled") = false;
+              if (volume_node->hasChildRecursive("gradientShadingEnabled")) {
+                volume_node->childRecursive("gradientShadingEnabled") =
+                    gradientShading;
+              }
+
               if (volume_node->hasChildRecursive("samplingRate"))
-                volume_node->childRecursive("samplingRate") = 0.125f;
-              if (volume_node->hasChildRecursive("adaptiveMaxSamplingRate"))
-                volume_node->childRecursive("adaptiveMaxSamplingRate") = 1.0f;
+                volume_node->childRecursive("samplingRate") = samplingRate;
+
+              if (volume_node->hasChildRecursive("adaptiveMaxSamplingRate")) {
+                volume_node->childRecursive("adaptiveMaxSamplingRate") =
+                    5 * samplingRate;
+              }
 
               retval.push_back(volume_node);
 
