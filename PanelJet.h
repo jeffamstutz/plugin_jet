@@ -41,7 +41,7 @@ namespace ospray {
       int resolution     = 50;
       int numFrames      = 100;
       float fps          = 60.f;
-      bool addIfCanceled = true;
+      bool addIfCanceled = false;
 
       // rendering data
       float samplingRate   = 0.25f;
