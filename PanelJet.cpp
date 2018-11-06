@@ -15,8 +15,8 @@
 // ======================================================================== //
 
 // imgui
-#include "imgui.h"
 #include "../../app/widgets/sg_ui/ospray_sg_ui.h"
+#include "imgui.h"
 // jobs
 #include "../../app/jobs/JobScheduler.h"
 // jet_plugin
@@ -45,10 +45,15 @@ namespace ospray {
         ImGui::Separator();
         ImGui::Separator();
 
-        if (current_frame == -1)
-          ui_SimulationStart();
-        else
+        ui_TimeStepControls();
+
+        if (simulationRunning) {
           ui_SimulationStatus();
+        } else {
+          ImGui::NewLine();
+          ImGui::NewLine();
+          ui_SimulationStart();
+        }
 
         if (ImGui::Button("Close"))
           setShown(false);
@@ -77,21 +82,22 @@ namespace ospray {
 
     void PanelJet::ui_SimulationStart()
     {
-      ImGui::NewLine();
-      ImGui::NewLine();
       if (ImGui::Button("Launch New Simulation")) {
         cancelSimulation = false;
         job_scheduler::schedule_job([&]() {
           job_scheduler::Nodes retval;
-          current_frame = 0;
+          simulationRunning = true;
+          currentFrame = 0;
 
           auto [data, dims] = run_simulation(
-              resolution, numFrames, fps, current_frame, cancelSimulation);
+              resolution, numFrames, fps, currentFrame, cancelSimulation);
 
-          utility::OnScopeExit([&]() { current_frame = -1; });
+          utility::OnScopeExit([&]() { simulationRunning = false; });
 
           if (cancelSimulation && !addIfCanceled)
             return retval;
+
+          currentFrame++;// last frame not accounted for in run_simulation()...
 
           // create sg nodes
 
@@ -132,9 +138,16 @@ namespace ospray {
     void PanelJet::ui_SimulationStatus()
     {
       ImGui::Text("running sim...");
-      ImGui::Text("current frame: %i", current_frame);
+      ImGui::Text("current frame: %i", currentFrame);
       if (ImGui::Button("Cancel Simulation"))
         cancelSimulation = true;
+    }
+
+    void PanelJet::ui_TimeStepControls()
+    {
+      if (ImGui::SliderInt("Timestep", &currentTimeStep, 0, currentFrame - 1)) {
+        // TODO
+      }
     }
 
   }  // namespace jet_plugin

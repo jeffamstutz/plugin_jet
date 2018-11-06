@@ -18,6 +18,8 @@
 
 #include "app/widgets/Panel.h"
 
+#include "ospray/sg/common/Selector.h"
+
 namespace ospray {
   namespace jet_plugin {
 
@@ -34,6 +36,7 @@ namespace ospray {
       void ui_RenderingParameters();
       void ui_SimulationStart();
       void ui_SimulationStatus();
+      void ui_TimeStepControls();
 
       // Data //
 
@@ -48,8 +51,15 @@ namespace ospray {
       bool gradientShading = false;
 
       // misc. UI data
-      int current_frame     = -1;
-      bool cancelSimulation = false;
+      int currentFrame       = -1;
+      bool simulationRunning = false;
+      bool cancelSimulation  = false;
+
+      // time series data
+      int currentTimeStep = 0;
+
+      // scene graph data
+      std::shared_ptr<sg::Selector> selector;
     };
 
   }  // namespace jet_plugin
