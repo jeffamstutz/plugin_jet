@@ -23,8 +23,10 @@
 namespace ospray {
   namespace jet_plugin {
 
-    using SimResults = std::tuple<ospcommon::containers::AlignedVector<float>,
-                                  ospcommon::vec3i>;
+    using SimData = ospcommon::containers::AlignedVector<float>;
+    using SimDims = ospcommon::vec3i;
+
+    using SimResults = std::tuple<SimData, SimDims>;
 
     void simulation_init(size_t resolutionX, double fps);
 

@@ -18,7 +18,9 @@
 
 #include "app/widgets/Panel.h"
 
-#include "ospray/sg/common/Selector.h"
+#include "ospray/sg/common/Node.h"
+
+#include "run_simulation.h"
 
 namespace ospray {
   namespace jet_plugin {
@@ -26,6 +28,7 @@ namespace ospray {
     struct PanelJet : public Panel
     {
       PanelJet();
+      ~PanelJet();
 
       void buildUI() override;
 
@@ -38,13 +41,17 @@ namespace ospray {
       void ui_SimulationStatus();
       void ui_TimeStepControls();
 
+      std::shared_ptr<sg::Node> createSgVolume(SimData &data,
+                                               SimDims dims,
+                                               int whichTimeStep);
+
       // Data //
 
       // simulation data
-      int resolution     = 50;
-      int numFrames      = 100;
-      float fps          = 60.f;
-      bool addIfCanceled = false;
+      int resolution          = 50;
+      int numFrames           = 100;
+      float fps               = 60.f;
+      bool showLatestTimeStep = true;
 
       // rendering data
       float samplingRate   = 0.25f;
@@ -59,7 +66,7 @@ namespace ospray {
       int currentTimeStep = 0;
 
       // scene graph data
-      std::shared_ptr<sg::Selector> selector;
+      std::shared_ptr<sg::Node> selector_ptr;
     };
 
   }  // namespace jet_plugin

@@ -18,17 +18,20 @@
 #include "../../app/widgets/sg_ui/ospray_sg_ui.h"
 #include "imgui.h"
 // jobs
+#include "../../app/app_utility/AsyncRenderEngine.h"
 #include "../../app/jobs/JobScheduler.h"
 // jet_plugin
 #include "PanelJet.h"
-#include "run_simulation.h"
-// ospcommon
-#include "ospcommon/utility/OnScopeExit.h"
 
 namespace ospray {
   namespace jet_plugin {
 
     PanelJet::PanelJet() : Panel("Jet Panel - Plugin") {}
+
+    PanelJet::~PanelJet()
+    {
+      simulation_cleanup();
+    }
 
     void PanelJet::buildUI()
     {
@@ -69,7 +72,7 @@ namespace ospray {
       ImGui::DragInt("resolutionX", &resolution, .1f, 10, 1000000);
       ImGui::DragInt("# frames", &numFrames, .1f, 1, 1000000);
       ImGui::DragFloat("sim FPS", &fps, .1f, 1.f, 120.f);
-      ImGui::Checkbox("add volume if canceled", &addIfCanceled);
+      ImGui::Checkbox("auto show latest", &showLatestTimeStep);
     }
 
     void PanelJet::ui_RenderingParameters()
@@ -87,58 +90,40 @@ namespace ospray {
         job_scheduler::schedule_job([&]() {
           job_scheduler::Nodes retval;
           simulationRunning = true;
-          currentFrame = 0;
+          currentFrame      = 0;
 
           simulation_init(resolution, fps);
 
-          for (int i = 0; i < numFrames - 1; ++i) {
-            simulation_compute_timestep();
-            currentFrame++;
-            if (cancelSimulation)
-              break;
-          }
+          selector_ptr   = sg::createNode("Jet Simulation", "Selector");
+          auto &selector = *selector_ptr;
 
-          auto [data, dims] = simulation_compute_timestep();
+          auto [first_data, first_dims] = simulation_compute_timestep();
+          auto first_volume = createSgVolume(first_data, first_dims, 0);
+          selector.add(first_volume);
 
-          simulation_cleanup();
+          job_scheduler::detail::schedule([&]() {
+            auto &engine = *AsyncRenderEngine::g_instance;
+            for (int i = 1; i < numFrames; ++i) {
+              auto [data, dims] = simulation_compute_timestep();
+              auto volume       = createSgVolume(data, dims, i);
 
-          utility::OnScopeExit([&]() { simulationRunning = false; });
+              currentFrame++;
 
-          if (cancelSimulation && !addIfCanceled)
-            return retval;
+              engine.scheduleNodeOp([=]() { selector_ptr->add(volume); });
 
-          currentFrame++;// last frame not accounted for in run_simulation()...
+              if (showLatestTimeStep) {
+                currentTimeStep = i;
+                engine.scheduleNodeValueChange(selector["index"], i);
+              }
 
-          // create sg nodes
+              if (cancelSimulation)
+                break;
+            }
 
-          auto volume_node = sg::createNode("basic_volume", "StructuredVolume");
+            simulationRunning = false;
+          });
 
-          auto voxel_data = std::make_shared<sg::DataVector1f>();
-          voxel_data->v   = std::move(data);
-
-          voxel_data->setName("voxelData");
-
-          volume_node->add(voxel_data);
-
-          // volume attributes
-
-          volume_node->child("voxelType")  = std::string("float");
-          volume_node->child("dimensions") = vec3i(dims);
-
-          if (volume_node->hasChildRecursive("gradientShadingEnabled")) {
-            volume_node->childRecursive("gradientShadingEnabled") =
-                gradientShading;
-          }
-
-          if (volume_node->hasChildRecursive("samplingRate"))
-            volume_node->childRecursive("samplingRate") = samplingRate;
-
-          if (volume_node->hasChildRecursive("adaptiveMaxSamplingRate")) {
-            volume_node->childRecursive("adaptiveMaxSamplingRate") =
-                5 * samplingRate;
-          }
-
-          retval.push_back(volume_node);
+          retval.push_back(selector_ptr);
 
           return retval;
         });
@@ -155,9 +140,59 @@ namespace ospray {
 
     void PanelJet::ui_TimeStepControls()
     {
-      if (ImGui::SliderInt("Timestep", &currentTimeStep, 0, currentFrame - 1)) {
-        // TODO
+      if (ImGui::SliderInt("Timestep", &currentTimeStep, 0, currentFrame)) {
+        showLatestTimeStep = false;
+        auto &engine       = *AsyncRenderEngine::g_instance;
+        engine.scheduleNodeValueChange(selector_ptr->child("index"),
+                                       currentTimeStep);
       }
+    }
+
+    std::shared_ptr<sg::Node> PanelJet::createSgVolume(SimData &data,
+                                                       SimDims dims,
+                                                       int whichTimeStep)
+    {
+      // create sg nodes
+
+      std::stringstream name;
+
+      name << "jet_volume_";
+      name << std::to_string(whichTimeStep / 10000).front();
+      name << std::to_string(whichTimeStep / 1000).front();
+      name << std::to_string(whichTimeStep / 100).front();
+      name << std::to_string(whichTimeStep / 10).front();
+      name << std::to_string(whichTimeStep % 10).front();
+
+      auto volume_node = sg::createNode(name.str(), "StructuredVolume");
+
+      auto voxel_data = std::make_shared<sg::DataVector1f>();
+      voxel_data->v   = std::move(data);
+
+      voxel_data->setName("voxelData");
+
+      volume_node->add(voxel_data);
+
+      // volume attributes
+
+      volume_node->child("voxelType")  = std::string("float");
+      volume_node->child("dimensions") = vec3i(dims);
+
+      if (volume_node->hasChildRecursive("gradientShadingEnabled")) {
+        volume_node->childRecursive("gradientShadingEnabled") = gradientShading;
+      }
+
+      if (volume_node->hasChildRecursive("samplingRate"))
+        volume_node->childRecursive("samplingRate") = samplingRate;
+
+      if (volume_node->hasChildRecursive("adaptiveMaxSamplingRate")) {
+        volume_node->childRecursive("adaptiveMaxSamplingRate") =
+            5 * samplingRate;
+      }
+
+      volume_node->verify();
+      volume_node->commit();
+
+      return volume_node;
     }
 
   }  // namespace jet_plugin
