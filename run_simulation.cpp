@@ -26,6 +26,62 @@ using namespace ospcommon;
 namespace ospray {
   namespace jet_plugin {
 
+    // Helper Types ///////////////////////////////////////////////////////////
+
+    struct SimInstance
+    {
+      SimInstance(size_t resolutionX, double fps) : frame(0, 1.f / fps)
+      {
+        dims = vec3i(resolutionX, 2 * resolutionX, resolutionX);
+
+        // Build solver
+        solver = jet::GridSmokeSolver3::builder()
+                     .withResolution({dims.x, dims.y, dims.z})
+                     .withDomainSizeX(1.0)
+                     .makeShared();
+
+        solver->setAdvectionSolver(
+            std::make_shared<jet::CubicSemiLagrangian3>());
+
+        auto grids  = solver->gridSystemData();
+        auto domain = grids->boundingBox();
+
+        // Build emitter
+        auto box = jet::Box3::builder()
+                       .withLowerCorner({0.45, -1, 0.45})
+                       .withUpperCorner({0.55, 0.05, 0.55})
+                       .makeShared();
+
+        auto emitter = jet::VolumeGridEmitter3::builder()
+                           .withSourceRegion(box)
+                           .withIsOneShot(false)
+                           .makeShared();
+
+        solver->setEmitter(emitter);
+        emitter->addStepFunctionTarget(solver->smokeDensity(), 0, 1);
+        emitter->addStepFunctionTarget(solver->temperature(), 0, 1);
+
+        // Build collider
+        auto sphere = jet::Sphere3::builder()
+                          .withCenter({0.5, 0.3, 0.5})
+                          .withRadius(0.075 * domain.width())
+                          .makeShared();
+
+        auto collider =
+            jet::RigidBodyCollider3::builder().withSurface(sphere).makeShared();
+
+        solver->setCollider(collider);
+      }
+
+      // Data //
+
+      vec3i dims;
+      std::shared_ptr<jet::GridSmokeSolver3> solver;
+      jet::Frame frame;
+    };
+
+    static std::unique_ptr<SimInstance> g_instance;
+
     // Constants //////////////////////////////////////////////////////////////
 
     constexpr size_t kEdgeBlur = 3;
@@ -82,65 +138,29 @@ namespace ospray {
       return data;
     }
 
-    SimResults run_simulation(size_t resolutionX,
-                              int numberOfFrames,
-                              double fps,
-                              int &current_frame,
-                              bool &cancel_simulation)
+    void simulation_init(size_t resolutionX, double fps)
     {
       jet::Logging::mute();
 
-      vec3i dims(resolutionX, 2 * resolutionX, resolutionX);
+      g_instance.reset(new SimInstance(resolutionX, fps));
+    }
 
-      // Build solver
-      auto solver =
-          jet::GridSmokeSolver3::builder()
-              .withResolution({dims.x, dims.y, dims.z})
-              .withDomainSizeX(1.0)
-              .makeShared();
+    SimResults simulation_compute_timestep()
+    {
+      auto &solver = g_instance->solver;
+      auto &dims   = g_instance->dims;
+      auto &frame  = g_instance->frame;
 
-      solver->setAdvectionSolver(std::make_shared<jet::CubicSemiLagrangian3>());
-
-      auto grids  = solver->gridSystemData();
-      auto domain = grids->boundingBox();
-
-      // Build emitter
-      auto box = jet::Box3::builder()
-                     .withLowerCorner({0.45, -1, 0.45})
-                     .withUpperCorner({0.55, 0.05, 0.55})
-                     .makeShared();
-
-      auto emitter = jet::VolumeGridEmitter3::builder()
-                         .withSourceRegion(box)
-                         .withIsOneShot(false)
-                         .makeShared();
-
-      solver->setEmitter(emitter);
-      emitter->addStepFunctionTarget(solver->smokeDensity(), 0, 1);
-      emitter->addStepFunctionTarget(solver->temperature(), 0, 1);
-
-      // Build collider
-      auto sphere = jet::Sphere3::builder()
-                        .withCenter({0.5, 0.3, 0.5})
-                        .withRadius(0.075 * domain.width())
-                        .makeShared();
-
-      auto collider =
-          jet::RigidBodyCollider3::builder().withSurface(sphere).makeShared();
-
-      solver->setCollider(collider);
-
-      // Run simulation
-      for (jet::Frame frame(0, 1.0 / fps); frame.index < numberOfFrames;
-           ++frame) {
-        solver->update(frame);
-        current_frame = frame.index;
-        if (cancel_simulation)
-          break;
-      }
+      solver->update(frame);
+      frame++;
 
       auto density = solver->smokeDensity();
       return std::make_tuple(extractVolumeData(density), dims);
+    }
+
+    void simulation_cleanup()
+    {
+      g_instance.reset();
     }
 
   }  // namespace jet_plugin

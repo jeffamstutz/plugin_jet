@@ -89,8 +89,18 @@ namespace ospray {
           simulationRunning = true;
           currentFrame = 0;
 
-          auto [data, dims] = run_simulation(
-              resolution, numFrames, fps, currentFrame, cancelSimulation);
+          simulation_init(resolution, fps);
+
+          for (int i = 0; i < numFrames - 1; ++i) {
+            simulation_compute_timestep();
+            currentFrame++;
+            if (cancelSimulation)
+              break;
+          }
+
+          auto [data, dims] = simulation_compute_timestep();
+
+          simulation_cleanup();
 
           utility::OnScopeExit([&]() { simulationRunning = false; });
 
