@@ -157,11 +157,11 @@ namespace ospray {
       std::stringstream name;
 
       name << "jet_volume_";
-      name << std::to_string(whichTimeStep / 10000).front();
-      name << std::to_string(whichTimeStep / 1000).front();
-      name << std::to_string(whichTimeStep / 100).front();
-      name << std::to_string(whichTimeStep / 10).front();
-      name << std::to_string(whichTimeStep % 10).front();
+      name << std::to_string(whichTimeStep / 10000).back();
+      name << std::to_string(whichTimeStep / 1000).back();
+      name << std::to_string(whichTimeStep / 100).back();
+      name << std::to_string(whichTimeStep / 10).back();
+      name << std::to_string(whichTimeStep % 10).back();
 
       auto volume_node = sg::createNode(name.str(), "StructuredVolume");
 

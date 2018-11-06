@@ -48,8 +48,8 @@ namespace ospray {
       // Data //
 
       // simulation data
-      int resolution          = 50;
-      int numFrames           = 100;
+      int resolution          = 25;
+      int numFrames           = 250;
       float fps               = 60.f;
       bool showLatestTimeStep = true;
 
