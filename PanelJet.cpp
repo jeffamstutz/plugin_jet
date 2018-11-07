@@ -87,7 +87,7 @@ namespace ospray {
     {
       if (ImGui::Button("Launch New Simulation")) {
         cancelSimulation = false;
-        job_scheduler::schedule_job([&]() {
+        job_scheduler::scheduleJob([&]() {
           job_scheduler::Nodes retval;
           simulationRunning = true;
           currentFrame      = 0;
