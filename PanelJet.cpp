@@ -20,6 +20,8 @@
 // jobs
 #include "../../app/app_utility/AsyncRenderEngine.h"
 #include "../../app/jobs/JobScheduler.h"
+// app sg utilities
+#include "../../app/sg_utility/utility.h"
 // jet_plugin
 #include "PanelJet.h"
 
@@ -81,6 +83,7 @@ namespace ospray {
 
       ImGui::DragFloat("sampling rate", &samplingRate, .01f, 0.01, 10.f);
       ImGui::Checkbox("gradient shading", &gradientShading);
+      ImGui::Checkbox("auto update tf value range", &autoUpdateTfValueRange);
     }
 
     void PanelJet::ui_SimulationStart()
@@ -101,19 +104,25 @@ namespace ospray {
           auto first_volume = createSgVolume(first_data, first_dims, 0);
           selector.add(first_volume);
 
+          if (autoUpdateTfValueRange)
+            resetVoxelRangeOfMasterTfn(*selector_ptr);
+
           job_scheduler::detail::schedule([&]() {
-            auto &engine = *AsyncRenderEngine::g_instance;
             for (int i = 1; i < numFrames; ++i) {
               auto [data, dims] = simulation_compute_timestep();
               auto volume       = createSgVolume(data, dims, i);
 
               currentFrame++;
 
-              engine.scheduleNodeOp([=]() { selector_ptr->add(volume); });
+              job_scheduler::scheduleNodeOp([=]() {
+                selector_ptr->add(volume);
+                if (autoUpdateTfValueRange)
+                  resetVoxelRangeOfMasterTfn(*selector_ptr);
+              });
 
               if (showLatestTimeStep) {
                 currentTimeStep = i;
-                engine.scheduleNodeValueChange(selector["index"], i);
+                job_scheduler::scheduleNodeValueChange(selector["index"], i);
               }
 
               if (cancelSimulation)
@@ -142,9 +151,9 @@ namespace ospray {
     {
       if (ImGui::SliderInt("Timestep", &currentTimeStep, 0, currentFrame)) {
         showLatestTimeStep = false;
-        auto &engine       = *AsyncRenderEngine::g_instance;
-        engine.scheduleNodeValueChange(selector_ptr->child("index"),
-                                       currentTimeStep);
+
+        job_scheduler::scheduleNodeValueChange(selector_ptr->child("index"),
+                                               currentTimeStep);
       }
     }
 
@@ -191,6 +200,8 @@ namespace ospray {
 
       volume_node->verify();
       volume_node->commit();
+
+      replaceAllTFsWithMasterTF(*volume_node);
 
       return volume_node;
     }

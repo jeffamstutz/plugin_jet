@@ -54,8 +54,9 @@ namespace ospray {
       bool showLatestTimeStep = true;
 
       // rendering data
-      float samplingRate   = 0.25f;
-      bool gradientShading = false;
+      float samplingRate          = 0.25f;
+      bool gradientShading        = false;
+      bool autoUpdateTfValueRange = true;
 
       // misc. UI data
       int currentFrame       = -1;
