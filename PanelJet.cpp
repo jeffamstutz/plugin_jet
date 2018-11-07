@@ -22,6 +22,8 @@
 #include "../../app/jobs/JobScheduler.h"
 // app sg utilities
 #include "../../app/sg_utility/utility.h"
+// ospray_sg
+#include "ospray/sg/visitor/MarkAllAsModified.h"
 // jet_plugin
 #include "PanelJet.h"
 
@@ -115,6 +117,9 @@ namespace ospray {
               currentFrame++;
 
               job_scheduler::scheduleNodeOp([=]() {
+                volume->traverse(sg::MarkAllAsModified{});
+                volume->verify();
+                volume->commit();
                 selector_ptr->add(volume);
                 if (autoUpdateTfValueRange)
                   resetVoxelRangeOfMasterTfn(*selector_ptr);
@@ -197,9 +202,6 @@ namespace ospray {
         volume_node->childRecursive("adaptiveMaxSamplingRate") =
             5 * samplingRate;
       }
-
-      volume_node->verify();
-      volume_node->commit();
 
       replaceAllTFsWithMasterTF(*volume_node);
 
