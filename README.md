@@ -15,5 +15,5 @@ Run with:
 ./ospStudio --plugin jet
 ```
 
-...then find the simulation control panel in the ```view``` menu.
+...then find the simulation control panel in the ```Panels``` menu.
 
