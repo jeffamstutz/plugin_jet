@@ -76,7 +76,7 @@ namespace ospray {
       ImGui::DragInt("resolutionX", &resolution, .1f, 10, 1000000);
       ImGui::DragInt("# frames", &numFrames, .1f, 1, 1000000);
       ImGui::DragFloat("sim FPS", &fps, .1f, 1.f, 120.f);
-      ImGui::Checkbox("auto show latest", &showLatestTimeStep);
+      ImGui::Checkbox("auto show latest time step", &showLatestTimeStep);
     }
 
     void PanelJet::ui_RenderingParameters()
@@ -166,8 +166,6 @@ namespace ospray {
                                                        SimDims dims,
                                                        int whichTimeStep)
     {
-      // create sg nodes
-
       std::stringstream name;
 
       name << "jet_volume_";
@@ -185,8 +183,6 @@ namespace ospray {
       voxel_data->setName("voxelData");
 
       volume_node->add(voxel_data);
-
-      // volume attributes
 
       volume_node->child("voxelType")  = std::string("float");
       volume_node->child("dimensions") = vec3i(dims);
