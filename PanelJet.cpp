@@ -92,6 +92,8 @@ namespace ospray {
     {
       if (ImGui::Button("Launch New Simulation")) {
         cancelSimulation = false;
+
+        // create new time-series node (sg::Selector) and do first sim time step
         job_scheduler::scheduleJob([&]() {
           job_scheduler::Nodes retval;
           simulationRunning = true;
@@ -109,6 +111,7 @@ namespace ospray {
           if (autoUpdateTfValueRange)
             resetVoxelRangeOfMasterTfn(*selector_ptr);
 
+          // run additional simulation time steps on a background task
           job_scheduler::detail::schedule([&]() {
             for (int i = 1; i < numFrames; ++i) {
               auto [data, dims] = simulation_compute_timestep();
@@ -116,6 +119,7 @@ namespace ospray {
 
               currentFrame++;
 
+              // task to create a new volume for the latest time step
               job_scheduler::scheduleNodeOp([=]() {
                 volume->traverse(sg::MarkAllAsModified{});
                 volume->verify();
