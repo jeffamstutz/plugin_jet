@@ -30,7 +30,7 @@
 namespace ospray {
   namespace jet_plugin {
 
-    PanelJet::PanelJet() : Panel("Jet Panel - Plugin") {}
+    PanelJet::PanelJet() : Panel("Jet Panel") {}
 
     PanelJet::~PanelJet()
     {
