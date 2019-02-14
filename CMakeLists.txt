@@ -20,7 +20,7 @@ if (BUILD_PLUGIN_JET)
 
   find_package(jet REQUIRED)
 
-  add_library(ospray_studio_plugin_jet
+  add_library(ospray_studio_plugin_jet SHARED
     plugin_jet.cpp
     PanelJet.cpp
     run_simulation.cpp
