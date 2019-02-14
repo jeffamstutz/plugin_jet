@@ -20,14 +20,13 @@ if (BUILD_PLUGIN_JET)
 
   find_package(jet REQUIRED)
 
-  ospray_create_library(ospray_studio_plugin_jet
+  add_library(ospray_studio_plugin_jet
     plugin_jet.cpp
     PanelJet.cpp
     run_simulation.cpp
-  LINK
-    ospray_studio
-    jet
   )
+
+  target_link_libraries(ospray_studio_plugin_jet PUBLIC ospray_studio jet)
 
   target_include_directories(ospray_studio_plugin_jet
     PRIVATE ${CMAKE_SOURCE_DIR}
